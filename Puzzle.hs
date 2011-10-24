@@ -16,11 +16,9 @@ class Eq p => Puzzle p where
 
   -- | @solutions puzzle@ returns a list of all solutions for a puzzle.
   solutions :: p -> [p]
-  solutions p = do
-    choice <- choices p
-    (do True <- [solved choice]
-        return choice)
-      `mplus` (solutions choice)
+  solutions p | solved p = return p
+              | otherwise = do choice <- choices p
+                               solutions choice
   -- | @solve puzzle@ returns the first solution of a puzzle, if any.
   solve :: p -> p
   solve p = head (solutions p)
