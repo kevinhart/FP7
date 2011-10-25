@@ -8,6 +8,7 @@ module Kakuro
 ) where
 
 import Data.Array
+import Data.List (nub)
 
 {- | @Kakuro@ represents a Kakuro puzzle, i.e., a crossword puzzle with
      digits, as a vector of cell contents (0: not yet decided, 1..9: decided,
@@ -43,3 +44,11 @@ bits n | n <= 0         = []
 sums :: Array (Int, Int) [[Int]]
 sums = accumArray (flip (:)) [] ((1,1),(9,45))
          [ ((length combo, sum combo), combo) | combo <- (map bits [3..511])]
+
+{- | @digits@ is an array which contains for a length (1..9) and a sum (1..45)
+     a list of unique digits from which all lists must be composed which add up
+     to the sum.  It is computed by flattening the actual lists contained in
+     'sums'.
+-}
+digits :: Array (Int, Int) [Int]
+digits = fmap (nub . concat) sums
