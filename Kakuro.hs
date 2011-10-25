@@ -1,11 +1,13 @@
 -- | A brute-force backtracking solver for Kakuro puzzles.
 module Kakuro
-  ( Kakuro
-  , Word
+( Kakuro
+, Word
 --  , across
 --  , down
 --  , make
-  ) where
+) where
+
+import Data.Array
 
 {- | @Kakuro@ represents a Kakuro puzzle, i.e., a crossword puzzle with
      digits, as a vector of cell contents (0: not yet decided, 1..9: decided,
@@ -22,7 +24,7 @@ data Kakuro = Kakuro { grid :: [Int],
      digits which can be part of the sum, and a vector of indices to cell
      contents in the Kakuro puzzle.
 -}
-data Word = Word { sum :: Int,
+data Word = Word { mySum :: Int,
                    myDigits :: [Int],
                    indices :: [Int] } deriving (Eq, Show)
 
@@ -33,3 +35,11 @@ bits n | n <= 0         = []
        | n `mod` 2 /= 0 = 1:rembits
        | otherwise      = rembits
            where rembits = map (+1) $ bits (n `div` 2)
+
+{- | @sums@ is an array which contains for a length (1..9) and a sum (1..45)
+     lists of unique digits which add up to the sum.  It is computed by
+     interpreting the bits in the numbers 3.511.
+-}
+sums :: Array (Int, Int) [[Int]]
+sums = accumArray (flip (:)) [] ((1,1),(9,45))
+         [ ((length combo, sum combo), combo) | combo <- (map bits [3..511])]
