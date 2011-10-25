@@ -21,6 +21,20 @@ data Kakuro = Kakuro { grid :: [Int],
                        words :: [Word],
                        links :: [[Int]] } deriving Eq
 
+-- implementing Show for Kakuro
+showKakuro :: Kakuro -> String
+showKakuro k = showRow (columns k) (grid k)
+  where
+    showDigit n | n == 0         = "?"
+                | n < 0 || n > 9 = " "
+                | otherwise      = show n
+    showRow cols [] = ""
+    showRow cols list = (foldl (++) "" (map showDigit (take cols list)))
+                        ++ "\n" ++ (showRow cols (drop cols list))
+
+instance Show (Kakuro) where
+  show x = showKakuro x
+
 {- | @Word@ represents one crossword in a Kakuro puzzle as the sum, a vector of
      digits which can be part of the sum, and a vector of indices to cell
      contents in the Kakuro puzzle.
