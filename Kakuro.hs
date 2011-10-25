@@ -8,7 +8,8 @@ module Kakuro
 ) where
 
 import Data.Array
-import Data.List (nub)
+import Data.List (nub,intersect,(\\))
+import Puzzle
 
 {- | @Kakuro@ represents a Kakuro puzzle, i.e., a crossword puzzle with
      digits, as a vector of cell contents (0: not yet decided, 1..9: decided,
@@ -43,6 +44,10 @@ data Word = Word { mySum :: Int,
                    myDigits :: [Int],
                    indices :: [Int] } deriving (Eq, Show)
 
+validDigits :: [Int] -> Word -> [Int]
+validDigits grid (Word _ pdigits indices) = pdigits \\ chosenDigits
+  where chosenDigits = map (grid!!) indices
+
 -- | @bits number@ returns a list of bit positions (1..9) which are set in a
 --   number (3..511)
 bits :: Int -> [Int]
@@ -66,3 +71,16 @@ sums = accumArray (flip (:)) [] ((1,1),(9,45))
 -}
 digits :: Array (Int, Int) [Int]
 digits = fmap (nub . concat) sums
+
+instance Puzzle Kakuro where
+  solved (Kakuro grid _ _ _) = all (/=0) grid
+
+  choices k@(Kakuro masterGrid _ _ _) = choicesR k
+    where
+     choicesR (Kakuro (g:gs) c words (l:ls))
+      | g /= 0    = map restore $ choicesR (Kakuro gs c words ls)
+      | otherwise = [Kakuro (guess:gs) c words (l:ls) | guess <- possibilities ]
+          where
+            restore (Kakuro gs c ws ls) = Kakuro (g:gs) c ws (l:ls)
+            possibilities = foldr intersect [1..9] digitslist
+            digitslist = map ((validDigits masterGrid) . (words!!)) l
