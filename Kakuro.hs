@@ -45,8 +45,10 @@ data Word = Word { mySum :: Int,
                    indices :: [Int] } deriving (Eq, Show)
 
 validDigits :: [Int] -> Word -> [Int]
-validDigits grid (Word _ pdigits indices) = pdigits \\ chosenDigits
-  where chosenDigits = map (grid!!) indices
+validDigits grid (Word wsum _ indices) = nub . concat $ combos
+  where
+    combos = [ s \\ chosenDigits | s <- (sums!((length indices),wsum)), all (`elem` s) chosenDigits ]
+    chosenDigits = [ x | x <- map (grid!!) indices, x /= 0]
 
 -- | @bits number@ returns a list of bit positions (1..9) which are set in a
 --   number (3..511)
