@@ -72,6 +72,32 @@ sums = accumArray (flip (:)) [] ((1,1),(9,45))
 digits :: Array (Int, Int) [Int]
 digits = fmap (nub . concat) sums
 
+{- | @make [ shorthands ]@ returns a Kakuro described by a list of across and
+     down.
+-}
+make :: [[Int]] -> Kakuro
+make list = Kakuro grid columns words links
+  where
+    grid = [ 0 | x <- [0..(columns*rows)-1] ]
+    
+    columns = maximum $ map (\x -> if x!!0 == 0 then (x!!2)+(x!!4) else 1) list
+    rows = maximum $ map (\x -> if x!!0 == 1 then (x!!1)+(x!!4) else 1) list
+    
+    words = makeWords list
+    makeWords [] = []
+    makeWords (x:xs) =
+      (Word sum (digits!(length, sum)) (indices orient)) : (makeWords xs)
+        where
+          orient = x!!0
+          row = x!!1
+          col = x!!2
+          sum = x!!3
+          length = x!!4
+          indices 0 = [ ((row-1)*columns)+(x-1) | x <- [col..(col+length)] ]
+          indices _ = [ ((x-1)*columns)+(col-1) | x <- [row..(row+length)] ]
+          
+    links = []
+
 instance Puzzle Kakuro where
   solved (Kakuro grid _ _ _) = all (/=0) grid
 
