@@ -2,9 +2,9 @@
 module Kakuro
 ( Kakuro
 , Word
---  , across
---  , down
---  , make
+, across
+, down
+, make
 ) where
 
 import Data.Array
@@ -81,17 +81,33 @@ sums = accumArray (flip (:)) [] ((1,1),(9,45))
 digits :: Array (Int, Int) [Int]
 digits = fmap (nub . concat) sums
 
+{- | @across row column sum length@ is a shorthand for a horizontal word. -}
+across :: Int -> Int -> Int -> Int -> [Int]
+across row column sum length = [0, row, column, sum, length]
+
+{- | @down column row sum length@ is a shorthand for a vertical word. -}
+down :: Int -> Int -> Int -> Int -> [Int]
+-- note that the column and row arguments are to be reversed since they are
+-- accepted in an order that does not fit the pattern of the to-be-returned list
+down column row sum length = [1, row, column, sum, length]
+
 {- | @make [ shorthands ]@ returns a Kakuro described by a list of across and
      down.
 -}
 make :: [[Int]] -> Kakuro
 make list = Kakuro grid columns words links
   where
-    grid = [ 0 | x <- [0..(columns*rows)-1] ]
+    -- grid composed from links: if there is a link, start with a o (undecided),
+    -- otherwise use a -1 to indicate nothing goes there
+    grid = [ if length (links!!x) == 0 then -1 else 0 | x <- [0..(columns*rows)-1] ]
+    
+    -- compute number of columns/rows in the puzzle based on the maximum 
+    -- dimensions required by all words
     columns = maximum $ map (\x -> if x!!0 == 0 then (x!!2)+(x!!4)-1 else 1) list
     rows = maximum $ map (\x -> if x!!0 == 1 then (x!!1)+(x!!4)-1 else 1) list
-    wordsPair = makeWords list
-    words = (map snd wordsPair)
+    
+    -- makeWords returns a list of (index,word) pairs, in order to facilitate
+    -- creations of links (see below)    
     makeWords [] = []
     makeWords ([orient, row, col, sum, length]:xs) =
       [ (index,word) | index <- (indices orient) ] ++ (makeWords xs)
@@ -99,13 +115,27 @@ make list = Kakuro grid columns words links
           indices 0 = [ ((row-1)*columns)+(n-1) | n <- [col..(col+length-1)] ]
           indices _ = [ ((n-1)*columns)+(col-1) | n <- [row..(row+length-1)] ]
           word = (Word sum (digits!(length, sum)) (indices orient))
+    
+    -- wordsPair stores the result of calling makeWords on the input list
+    wordsPair = makeWords list
+    
+    -- words for the Kakuro are obtained by extracting the second part of each
+    -- pair (note that this is admittedly sub-optimal since there will be
+    -- duplicate words, but it makes it easy to create links from the indices in
+    -- this array 
+    words = (map snd wordsPair)
+    
+    -- links is created by first mapping wordsPair (see above) to pairs of
+    -- (gridIndex, [wordIndex]) and then combining all [wordIndex] arrays
+    -- with the same index in order to give the "links" (i.e. indices into the
+    -- words array) for each grid cell
     links = [ (arr!a) | a <- [fst $ bounds arr .. snd $ bounds arr] ]
       where
-        arr = accumArray (++) [] (0, length grid - 1) (i 0 [] wordsPair)
-        i num acc [] = acc
-        i num acc (x:xs) = i (num + 1) ((fst x, [num]) : acc) xs
-        
+        arr = accumArray (++) [] (0, length grid - 1) (wordsPairMap 0 [] wordsPair)
+        wordsPairMap num acc [] = acc
+        wordsPairMap num acc (x:xs) = wordsPairMap (num + 1) ((fst x, [num]) : acc) xs
 
+-- puzzle implementation of Kakuro
 instance Puzzle Kakuro where
   solved (Kakuro grid _ _ _) = all (/=0) grid
 
@@ -127,3 +157,15 @@ instance Puzzle Kakuro where
             -- the validDigits of the Words linked to the current cell
             possibilities = foldr intersect [1..9] digitslist
             digitslist = map ((validDigits masterGrid) . (words!!)) l
+
+-- demo list from the writeup, for reference included here            
+demo = [
+  across 1 1 16 2, down 1 1 23 3,
+  across 1 4 12 2, down 1 6 16 2,
+  across 2 1 17 5, down 2 1 41 7,
+  across 3 1 20 4, down 3 2 32 5,
+  across 4 2 24 3, down 4 1 29 7,
+  across 5 2 29 4, down 5 1 13 2,
+  across 6 1 35 5, down 5 5 17 3,
+  across 7 1 15 2,
+  across 7 4  3 2 ] 

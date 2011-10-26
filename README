@@ -1,1 +1,34 @@
-this is the readme
+Assignment 7: Backtracking
+
+Kevin Hart
+Matt MacEwan
+
+---
+
+Puzzle.hs contains the Puzzle class implementation, according to the
+specification.
+
+Zeno.hs contains a couple of very simple "puzzles", used to test the
+Puzzle class. (This file contains no required deliverables and can be ignored.)
+
+Kakuro.hs contains the rest of the deliverables: the Kakuro puzzle
+implementation itself. This includes functions like across, down, make,
+digits, etc., as well as the solved and choices functions required for the
+puzzle implementation.
+
+
+A note on "down". In the documentation provided, the arguments to the
+down function are, in order:
+
+    down row column sum length
+    
+However, in the demo puzzle provided, the "row" and "column" arguments seem to
+be reversed. As printed in the writeup and using the argument order from the
+documentation, the Kakuro puzzle will not be created correctly (and is in fact
+unsolvable, according to our implementation). To remedy this we have switched
+the order of arguments to down in our solution, viz. down is now:
+
+    down column row sum length
+    
+After making this trivial change to the down function, our implementation worked
+as expected and the puzzle was solved.

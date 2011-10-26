@@ -20,5 +20,7 @@ class Eq p => Puzzle p where
               | otherwise = do choice <- choices p
                                solutions choice
   -- | @solve puzzle@ returns the first solution of a puzzle, if any.
+  --   If no solutions are found, this function returns the input puzzle.
   solve :: p -> p
-  solve p = head (solutions p)
+  solve p = if sol == [] then p else head sol
+    where sol = solutions p
