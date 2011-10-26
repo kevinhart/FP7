@@ -46,16 +46,16 @@ data Word = Word { mySum :: Int,
 
 -- validDigits returns a list of digits that would be valid guesses for the
 -- next digit of the sum given the already guessed digits.
+-- This is done by querying the digits array for the digits which could go
+-- into a subset of the Word.  That is, decompositions shortened by the the
+-- previously guessed digits.
 validDigits :: [Int] -> Word -> [Int]
-validDigits grid (Word wsum _ indices) = nub . concat $ combos
-  where
-    -- combos queries the sums array for digit sets of the right length and sum
-    -- and, for supersets of the already chosen digits, subtracts the chosen
-    -- digits.  This leaves the potential digits for the next guess of that set.
-    -- Combining all these and nubbing gives all the potential guesses.
-    combos = [ s \\ chosenDigits | s <- (sums!((length indices),wsum)),
-      all (`elem` s) chosenDigits ]
-    chosenDigits = [ x | x <- map (grid!!) indices, x /= 0]
+validDigits grid (Word wsum _ indices) = digits ! (backlength,backsum)
+  \\ chosenDigits -- subtract the already guessed digits to avoid duplicates
+    where
+      backlength = (length indices) - (length chosenDigits)
+      backsum = wsum - (sum chosenDigits)
+      chosenDigits = [ x | x <- map (grid!!) indices, x /= 0]
 
 -- | @bits number@ returns a list of bit positions (1..9) which are set in a
 --   number (3..511)
@@ -71,7 +71,7 @@ bits n | n <= 0         = []
 -}
 sums :: Array (Int, Int) [[Int]]
 sums = accumArray (flip (:)) [] ((1,1),(9,45))
-         [ ((length combo, sum combo), combo) | combo <- (map bits [3..511])]
+         [ ((length combo, sum combo), combo) | combo <- (map bits [1..511])]
 
 {- | @digits@ is an array which contains for a length (1..9) and a sum (1..45)
      a list of unique digits from which all lists must be composed which add up
@@ -84,12 +84,21 @@ digits = fmap (nub . concat) sums
 instance Puzzle Kakuro where
   solved (Kakuro grid _ _ _) = all (/=0) grid
 
+  -- choices delegates to choicesR to give scope to the masterGrid for use in
+  -- validDigits later
   choices k@(Kakuro masterGrid _ _ _) = choicesR k
     where
      choicesR (Kakuro (g:gs) c words (l:ls))
+     -- If g /= 0, that cell has already been guessed.  Recurse after pulling
+     -- off the corresponding grid cell and links element.  Be sure to replace
+     -- those on all the results of the recursion.
       | g /= 0    = map restore $ choicesR (Kakuro gs c words ls)
+     -- If g == 0, we found a cell to guess on.  Comprehend a list of Kakuros
+     -- replacing g with all 'possibilities'
       | otherwise = [Kakuro (guess:gs) c words (l:ls) | guess <- possibilities ]
           where
             restore (Kakuro gs c ws ls) = Kakuro (g:gs) c ws (l:ls)
+            -- the possibilities are found by intersecting together lists of
+            -- the validDigits of the Words linked to the current cell
             possibilities = foldr intersect [1..9] digitslist
             digitslist = map ((validDigits masterGrid) . (words!!)) l
