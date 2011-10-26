@@ -44,10 +44,17 @@ data Word = Word { mySum :: Int,
                    myDigits :: [Int],
                    indices :: [Int] } deriving (Eq, Show)
 
+-- validDigits returns a list of digits that would be valid guesses for the
+-- next digit of the sum given the already guessed digits.
 validDigits :: [Int] -> Word -> [Int]
 validDigits grid (Word wsum _ indices) = nub . concat $ combos
   where
-    combos = [ s \\ chosenDigits | s <- (sums!((length indices),wsum)), all (`elem` s) chosenDigits ]
+    -- combos queries the sums array for digit sets of the right length and sum
+    -- and, for supersets of the already chosen digits, subtracts the chosen
+    -- digits.  This leaves the potential digits for the next guess of that set.
+    -- Combining all these and nubbing gives all the potential guesses.
+    combos = [ s \\ chosenDigits | s <- (sums!((length indices),wsum)),
+      all (`elem` s) chosenDigits ]
     chosenDigits = [ x | x <- map (grid!!) indices, x /= 0]
 
 -- | @bits number@ returns a list of bit positions (1..9) which are set in a
