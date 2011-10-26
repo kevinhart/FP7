@@ -79,24 +79,23 @@ make :: [[Int]] -> Kakuro
 make list = Kakuro grid columns words links
   where
     grid = [ 0 | x <- [0..(columns*rows)-1] ]
-    
-    columns = maximum $ map (\x -> if x!!0 == 0 then (x!!2)+(x!!4) else 1) list
-    rows = maximum $ map (\x -> if x!!0 == 1 then (x!!1)+(x!!4) else 1) list
-    
-    words = makeWords list
+    columns = maximum $ map (\x -> if x!!0 == 0 then (x!!2)+(x!!4)-1 else 1) list
+    rows = maximum $ map (\x -> if x!!0 == 1 then (x!!1)+(x!!4)-1 else 1) list
+    wordsPair = makeWords list
+    words = (map snd wordsPair)
     makeWords [] = []
-    makeWords (x:xs) =
-      (Word sum (digits!(length, sum)) (indices orient)) : (makeWords xs)
+    makeWords ([orient, row, col, sum, length]:xs) =
+      [ (index,word) | index <- (indices orient) ] ++ (makeWords xs)
         where
-          orient = x!!0
-          row = x!!1
-          col = x!!2
-          sum = x!!3
-          length = x!!4
-          indices 0 = [ ((row-1)*columns)+(x-1) | x <- [col..(col+length)] ]
-          indices _ = [ ((x-1)*columns)+(col-1) | x <- [row..(row+length)] ]
-          
-    links = []
+          indices 0 = [ ((row-1)*columns)+(n-1) | n <- [col..(col+length-1)] ]
+          indices _ = [ ((n-1)*columns)+(col-1) | n <- [row..(row+length-1)] ]
+          word = (Word sum (digits!(length, sum)) (indices orient))
+    links = [ (arr!a) | a <- [fst $ bounds arr .. snd $ bounds arr] ]
+      where
+        arr = accumArray (++) [] (0, length grid - 1) (i 0 [] wordsPair)
+        i num acc [] = acc
+        i num acc (x:xs) = i (num + 1) ((fst x, [num]) : acc) xs
+        
 
 instance Puzzle Kakuro where
   solved (Kakuro grid _ _ _) = all (/=0) grid
